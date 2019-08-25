@@ -5,9 +5,50 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var bioRouter = require('./routes/bio');
 
+var bodyParser = require('body-parser');
+var fs = require('fs');
+
+var path = require('path');
 var app = express();
+
+console.log('------ start -------');
+
+var files = fs.readdirSync('public/daily-photos/');
+var arrOfObjects = [];
+files.map(function(value, index) {
+  console.log(value);
+  if (value.charAt(0) === '.') {} 
+  else {
+    arrOfObjects.push({
+      title: value,
+      url:  'http://localhost:3000/daily-photos/' + value
+    });
+  }
+});
+
+let arrStr = JSON.stringify(arrOfObjects);
+let photoObj = `{"name": "My Daily Photos", "array": ${arrStr}}`;
+let jsonResult = JSON.parse(photoObj);
+//console.log('---- json results ------');
+//console.log(jsonResult);
+
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "*");
+  next();
+});
+
+
+app.get('/', (req, res) => {
+  console.log('starting up the app');
+  return res.send(JSON.stringify(jsonResult));
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -19,8 +60,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/gallery', indexRouter);
+app.use('/bio', bioRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

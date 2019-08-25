@@ -24,18 +24,15 @@ const searchStyle = {
 
 
 class Gallery extends Component {
-
-    constructor(props) {
-        
+    constructor(props) {   
         super(props);
         this.state = {  
             photos: null, // keeps a list of all the photos
             value: '',
             startsWithValue: '',
             selectedOption: null,
+            randWidthArr: null,
         } 
-
-        
         this.titleContainsHandleChange = this.titleContainsHandleChange.bind(this);
         this.startsWithHandleChange = this.startsWithHandleChange.bind(this);
         this.aToZClicked = this.aToZClicked.bind(this);
@@ -53,11 +50,9 @@ class Gallery extends Component {
         console.log('-- componentWillUnmount --');
     }
 
-
     aToZClicked() {
         const { treeWithPhotos } = this.props;
         let arr = treeWithPhotos.firstToLast();
-
         let arrObj = [];
         for (let i = 0; i < arr.length; i++) {
             arrObj.push({
@@ -66,15 +61,12 @@ class Gallery extends Component {
                 url: arr[i]
             });
         }
-        this.setState({
-            photos: arrObj
-        });
+        this.setState({ photos: arrObj });
     };
 
     zToAClicked() {
         const { treeWithPhotos } = this.props;
         let arr = treeWithPhotos.lastToFirst();
-
         let arrObj = [];
         for (let i = 0; i < arr.length; i++) {
             arrObj.push({
@@ -83,24 +75,15 @@ class Gallery extends Component {
                 url: arr[i]
             });
         }
-        this.setState({
-            photos: arrObj,
-        });
+        this.setState({ photos: arrObj });
     };
 
     startsWithHandleChange(event) {
         let searchPattern = event.target.value.trim();
-
         if (!searchPattern || searchPattern === '') {
-    
-
-            this.setState({
-                startsWithValue: searchPattern
-            });
-
+            this.setState({ startsWithValue: searchPattern });
             const { treeWithPhotos } = this.props;
             let arr = treeWithPhotos.firstToLast();
-
             let arrObj = [];
             for (let i = 0; i < arr.length; i++) {
                 arrObj.push({
@@ -109,54 +92,33 @@ class Gallery extends Component {
                     url: arr[i]
                 });
             }
-            this.setState({
-                photos: arrObj,
-            });
+            this.setState({ photos: arrObj });
         } else {
-
-            this.setState({
-                startsWithValue: searchPattern
-            });
-    
+            this.setState({ startsWithValue: searchPattern });
             const { treeWithPhotos } = this.props;
-    
-            let prepend = `http://localhost:6680/daily-photos/`;
+            let prepend = `http://localhost:3000/daily-photos/`;
             let results = treeWithPhotos.searchForStartingWith(prepend, searchPattern);
-            this.setState({
-                photos: results
-            });
+            this.setState({ photos: results });
         }  
     }
 
     titleContainsHandleChange(event) {
-        this.setState({
-            value: event.target.value
-        });
-
+        this.setState({ value: event.target.value });
         const { treeWithPhotos } = this.props;
-        let prepend = `http://localhost:6680/daily-photos/`;
+        let prepend = `http://localhost:3000/daily-photos/`;
         let results = treeWithPhotos.searchForAnyMatch(prepend, event.target.value);
-
-        this.setState({
-            photos: results
-        });
+        this.setState({ photos: results });
     }
 
-
     static getDerivedStateFromProps(nextProps, prevState) {
-
-        console.log('-- getDerivedStateFromProps --');
-
         if (prevState.photos && prevState.photos.length === 0 && prevState.startsWithValue !== '') {
             console.log(' photo array is empty AND value of STARTS WITH exists');
             return { photos: [] }
         }
-
         if (prevState.photos && prevState.photos.length === 0 && prevState.value !== '') {
             console.log(' photo array is empty AND value of TITLE CONTAINS exists');
             return { photos: [] }
         }
-
         if (!prevState.photos) {
             console.log('no prev photo arr');
             if (nextProps.treeWithPhotos) {
@@ -169,7 +131,7 @@ class Gallery extends Component {
                         url: arr[i]
                     });
                 }
-                return { photos: arrObj }
+                return { photos: arrObj } 
             } else {
                 return { photos: [] }
             }
@@ -187,8 +149,8 @@ class Gallery extends Component {
                     });
                 }
                 return { photos: arrObj }
-            } else {
-                return { photos: [] }
+            } else { 
+                return { photos: [] } 
             }
         }
         return { photos: prevState.photos }
@@ -202,62 +164,11 @@ class Gallery extends Component {
         }
     }
 
-
-/*
-                 <div className="col-6 col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
-                    <a href="single.html" className="d-block photo-item">
-                      <img src="/images/img_5.jpg" alt="Image" className="img-fluid" />
-                      <div className="photo-text-more">
-                        <div className="photo-text-more">
-                        <h3 className="heading">Photos Title Here</h3>
-                        <span className="meta">42 Photos</span>
-                      </div>
-                      </div>
-                    </a>
-                  </div>
-
-
-                <div className="col-6 col-md-6 col-lg-3" data-aos="fade-up">
-                    <a href="single.html" className="d-block photo-item">
-                      <img src="/images/img_1.jpg" alt="Image" className="img-fluid" />
-                      <div className="photo-text-more">
-                        <h3 className="heading">Photos Title Here</h3>
-                        <span className="meta">42 Photos</span>
-                      </div>
-                    </a>
-                  </div>
-                
-                  <div className="col-6 col-md-6 col-lg-6" data-aos="fade-up" data-aos-delay="200">
-                    <a href="single.html" className="d-block photo-item">
-                      <img src="/images/img_2.jpg" alt="Image" className="img-fluid" />
-                      <div className="photo-text-more">
-                        <div className="photo-text-more">
-                        <h3 className="heading">Photos Title Here</h3>
-                        <span className="meta">42 Photos</span>
-                      </div>
-                      </div>
-                    </a>
-                  </div>
-
-
-                     <div class="col-6 col-md-6 col-lg-3" data-aos="fade-up">
-          <a href="images/img_1.jpg" class="d-block photo-item" data-fancybox="gallery">
-            <img src="images/img_1.jpg" alt="Image" class="img-fluid">
-            <div class="photo-text-more">
-              <span class="icon icon-search"></span>
-            </div>
-          </a>
-        </div>
-
-
-        
-*/
     render() {
         const { photos } = this.state;
-
+        const { randWithArr } = this.props;
         return (
             <div id="gallery" className="row align-items-stretch">  
-
                 <div style={searchStyle} className="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
                     <div className="btn-group mr-2" role="group" aria-label="First group">
                         <button onClick={this.aToZClicked} type="button" className="btn btn-secondary">A to Z</button>
@@ -271,7 +182,6 @@ class Gallery extends Component {
                                 type="text" className="form-control" placeholder="title name" 
                                 aria-label="title name" aria-describedby="btnGroupAddon" />   
                     </div>
-
                     <div className="input-group">
                         <div className="input-group-prepend">
                         <div className="input-group-text" id="btnGroupStartsWith">Starts With: </div>
@@ -281,41 +191,59 @@ class Gallery extends Component {
                                 aria-label="starts with" aria-describedby="btnGroupStartsWith" />   
                     </div>
                 </div>
-
-                    {photos.map((photoObj, index) => (
-                        <div className='col-6 col-md-6 col-lg-3' data-aos="fade-up">
+                {photos.map((photoObj, index) => {
+                    let cssClasses = 'col-6 col-md-6 col-lg-' + randWithArr[index];
+                    return (
+                        <div className={cssClasses} data-aos="fade-up">
                         <a href={photoObj.url}  className="d-block photo-item" data-fancybox="gallery">
-                          <img src={photoObj.url} alt="Image" className="img-fluid" />
-                          <div className="photo-text-more">
+                        <img src={photoObj.url} alt="Image" className="img-fluid" />
+                        <div className="photo-text-more">
                             <h3 className="heading"><span>{index} | </span>{this.getURLTitle(photoObj.url)}</h3>
                             <span class="icon icon-search"></span>
                         </div>
                         </a>
-                      </div>
-                    ))}
-
+                    </div>);
+                })}
             </div>
         );
     }
 }
- 
-//export default Gallery;
+
+function util_generateImageWidths() {
+    let combinations = [
+        [12],
+        [4, 8],
+        [8, 4],
+        [6, 6],
+        [6, 3, 3],
+        [3, 6, 3],
+        [3, 3, 6],
+        [3, 3, 3, 3],
+        [4, 4, 4]
+    ];
+
+    let comboToUse = Math.floor(Math.random() * 5132019) % combinations.length;
+    return combinations[comboToUse];
+
+}
 
 const mapStateToProps = function(state) {
-    const { photoReducer } = state;
+    const { photoReducer} = state;
+    let flattened = null;
+
+    if (photoReducer && photoReducer.photoData) {
+        let numOfPhotos = photoReducer.photoData.firstToLast().length;
+        let arrOfWidth = [numOfPhotos];
+        for (let i = 0; i < numOfPhotos; i++) { arrOfWidth[i] = util_generateImageWidths(); }
+        flattened = [].concat.apply([], arrOfWidth);
+    }
     return {
         // it is an AVL tree
         treeWithPhotos: photoReducer.photoData,
+        randWithArr: flattened
     }
 }
   
   export default connect(mapStateToProps, {
     getPhotosAction: getPhotos,
   })(Gallery);
-
-
-
-
-
-
-
