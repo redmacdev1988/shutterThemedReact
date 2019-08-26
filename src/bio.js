@@ -37,8 +37,8 @@ class Bio extends Component {
                         </p>
                         <p className="mb-5">
                           The contents of this site is also to keep and pass down wisdom to my children. 
-                          It is writte in memory of my grandmother.
-                          I hope I give them the same love and care as my grandmother have given me.
+                          It is written in memory of my grandmother.
+                          I hope I give them the same love and care as she have given me.
                           I hope she would be proud of me. 
                         </p>
                         <p cass="mt-4">With love<br /> RedMacDev1988</p>
