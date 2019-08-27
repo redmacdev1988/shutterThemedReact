@@ -31,6 +31,7 @@ class Gallery extends Component {
             startsWithValue: '',
             selectedOption: null,
             randWidthArr: null,
+            pageLinks: new Array(),
             pages: [{
                 from: 0,
                 to: 18
@@ -249,7 +250,8 @@ class Gallery extends Component {
     }
 }
 
-function util_generateImageWidths() {
+
+function randomTwelveColumnWidthsForRow() {
     let combinations = [
         [12],
         [4, 8],
@@ -261,10 +263,15 @@ function util_generateImageWidths() {
         [3, 3, 3, 3],
         [4, 4, 4]
     ];
+    return util_generateRowOfImageWidths(combinations);
+}
 
-    let comboToUse = Math.floor(Math.random() * 5132019) % combinations.length;
-    return combinations[comboToUse];
+function randomIndex(total) {
+    return Math.floor(Math.random() * 5132019) % total;
+}
 
+function util_generateRowOfImageWidths(combinations) {
+    return combinations[randomIndex(combinations.length)];
 }
 
 const mapStateToProps = function(state) {
@@ -276,10 +283,66 @@ const mapStateToProps = function(state) {
         let numOfPhotos = photoReducer.photoData.firstToLast().length;
 
         // then we generate random image width according to the # of images we get
-        let arrOfWidth = [numOfPhotos];
-        for (let i = 0; i < numOfPhotos; i++) { arrOfWidth[i] = util_generateImageWidths(); }
-        flattened = [].concat.apply([], arrOfWidth);
+        //let arrOfWidth = [numOfPhotos];
 
+        let rowOfWidthsArr = new Array();
+        let photoCounter = numOfPhotos;
+        while (photoCounter > 0) {
+            let oneRowOfWidths = randomTwelveColumnWidthsForRow();
+            if (oneRowOfWidths.length > photoCounter) {
+                oneRowOfWidths = oneRowOfWidths.slice(0, photoCounter);
+                rowOfWidthsArr.push(oneRowOfWidths);
+                break;
+            }
+            rowOfWidthsArr.push(oneRowOfWidths);
+            photoCounter = photoCounter - oneRowOfWidths.length;
+        }
+
+        console.log(`There are ${rowOfWidthsArr.length} rows`);
+
+        // a link's from:to is formed from 8 rows
+        let pages = 0;
+        let links = [];
+        let imageNum = 0;
+        let bToggle = true;
+
+        let tmpObj = {from: null, to: null};
+
+        /*
+        rowOfWidthsArr = [
+            [4,8],
+            [12],
+            [12],
+            [8,4],
+            [4],
+        ];
+        */
+
+        tmpObj = {from:null, to:null};
+        tmpObj.from = 0;
+
+        // going through each row
+        for (let i = 0; i < rowOfWidthsArr.length; i++) {
+            console.log(`--------------index i ${i} ------------------`);
+            if ((i % 2 == 0) && (i != 0)) { // after 2nd row, let's see what # of image we have come to
+                pages++;
+                tmpObj.to = imageNum-1;
+                links.push(tmpObj);
+                tmpObj = {from: null, to: null};
+                tmpObj.from = imageNum;
+            }
+            imageNum = imageNum + rowOfWidthsArr[i].length;
+        }
+
+        if (!tmpObj.to) {
+            console.log('no tmpObj.to, lets include it');
+            tmpObj.to = imageNum - 1;
+            links.push(tmpObj);
+        } else {
+            console.log('everything is ok');
+        }
+        console.log(links);
+        flattened = [].concat.apply([], rowOfWidthsArr);
     }
     return {
         // it is an AVL tree
@@ -290,4 +353,4 @@ const mapStateToProps = function(state) {
   
   export default connect(mapStateToProps, {
     getPhotosAction: getPhotos,
-  })(Gallery);
+  })(Gallery); 
