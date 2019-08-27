@@ -274,73 +274,55 @@ function util_generateRowOfImageWidths(combinations) {
     return combinations[randomIndex(combinations.length)];
 }
 
+
+function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
+    let photoCounter = numOfPhotos;
+    let rowOfWidthsArr = new Array();
+     while (photoCounter > 0) {
+        let oneRowOfWidths = randomTwelveColumnWidthsForRow();
+        if (oneRowOfWidths.length > photoCounter) {
+            oneRowOfWidths = oneRowOfWidths.slice(0, photoCounter);
+            rowOfWidthsArr.push(oneRowOfWidths);
+            break;
+        }
+        rowOfWidthsArr.push(oneRowOfWidths);
+        photoCounter = photoCounter - oneRowOfWidths.length;
+    }
+    console.log(`There are ${rowOfWidthsArr.length} rows`);
+    return rowOfWidthsArr;
+}
+
+function createImageIndexLinks(rowOfWidthsArr) {
+    let links = [];
+    let imageNum = 0;
+    
+    let tmpObj = {from: null, to: null};
+    tmpObj.from = 0;
+    for (let i = 0; i < rowOfWidthsArr.length; i++) {
+        if ((i % 4 == 0) && (i != 0)) {
+            tmpObj.to = imageNum-1;
+            links.push(tmpObj);
+            tmpObj = {from: null, to: null};
+            tmpObj.from = imageNum;
+        }
+        imageNum = imageNum + rowOfWidthsArr[i].length;
+    }
+
+    if (!tmpObj.to) {
+        tmpObj.to = imageNum - 1;
+        links.push(tmpObj);
+    } 
+    return links;
+}
+
 const mapStateToProps = function(state) {
     const { photoReducer} = state;
     let flattened = null;
 
     if (photoReducer && photoReducer.photoData) {
-        // first lets see how many images we get
         let numOfPhotos = photoReducer.photoData.firstToLast().length;
-
-        // then we generate random image width according to the # of images we get
-        //let arrOfWidth = [numOfPhotos];
-
-        let rowOfWidthsArr = new Array();
-        let photoCounter = numOfPhotos;
-        while (photoCounter > 0) {
-            let oneRowOfWidths = randomTwelveColumnWidthsForRow();
-            if (oneRowOfWidths.length > photoCounter) {
-                oneRowOfWidths = oneRowOfWidths.slice(0, photoCounter);
-                rowOfWidthsArr.push(oneRowOfWidths);
-                break;
-            }
-            rowOfWidthsArr.push(oneRowOfWidths);
-            photoCounter = photoCounter - oneRowOfWidths.length;
-        }
-
-        console.log(`There are ${rowOfWidthsArr.length} rows`);
-
-        // a link's from:to is formed from 8 rows
-        let pages = 0;
-        let links = [];
-        let imageNum = 0;
-        let bToggle = true;
-
-        let tmpObj = {from: null, to: null};
-
-        /*
-        rowOfWidthsArr = [
-            [4,8],
-            [12],
-            [12],
-            [8,4],
-            [4],
-        ];
-        */
-
-        tmpObj = {from:null, to:null};
-        tmpObj.from = 0;
-
-        // going through each row
-        for (let i = 0; i < rowOfWidthsArr.length; i++) {
-            console.log(`--------------index i ${i} ------------------`);
-            if ((i % 2 == 0) && (i != 0)) { // after 2nd row, let's see what # of image we have come to
-                pages++;
-                tmpObj.to = imageNum-1;
-                links.push(tmpObj);
-                tmpObj = {from: null, to: null};
-                tmpObj.from = imageNum;
-            }
-            imageNum = imageNum + rowOfWidthsArr[i].length;
-        }
-
-        if (!tmpObj.to) {
-            console.log('no tmpObj.to, lets include it');
-            tmpObj.to = imageNum - 1;
-            links.push(tmpObj);
-        } else {
-            console.log('everything is ok');
-        }
+        let rowOfWidthsArr = createRowOfWidthsArrFromNumOfPhotos(numOfPhotos);
+        let links = createImageIndexLinks(rowOfWidthsArr);
         console.log(links);
         flattened = [].concat.apply([], rowOfWidthsArr);
     }
