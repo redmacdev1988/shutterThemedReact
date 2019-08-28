@@ -31,7 +31,6 @@ class Gallery extends Component {
             startsWithValue: '',
             selectedOption: null,
             randWidthArr: null,
-            pageLinks: new Array(),
             pages: [{
                 from: 0,
                 to: 18
@@ -251,8 +250,10 @@ class Gallery extends Component {
 }
 
 
-function randomTwelveColumnWidthsForRow() {
-    let combinations = [
+// partial function
+// generates random widths if bootstrap total width is 12
+const randomTwelveColumnWidthsForRow = function(secretNum) {
+    return util_generateRowOfImageWidths(secretNum, [
         [12],
         [4, 8],
         [8, 4],
@@ -262,16 +263,28 @@ function randomTwelveColumnWidthsForRow() {
         [3, 3, 6],
         [3, 3, 3, 3],
         [4, 4, 4]
-    ];
-    return util_generateRowOfImageWidths(combinations);
+    ]);
 }
 
-function randomIndex(total) {
-    return Math.floor(Math.random() * 5132019) % total;
+// partial function
+// generates random widths if bootstrap total width is 8
+const randomEightColumnWidthsForRow = function(secretNum) {
+    return util_generateRowOfImageWidths(secretNum, [
+        [8],
+        [6, 2],
+        [2, 6],
+        [4, 4],
+        [2, 2, 4],
+        [2, 4, 2],
+        [4, 2, 2],
+        [2, 2, 2, 2]
+    ]);
 }
 
-function util_generateRowOfImageWidths(combinations) {
-    return combinations[randomIndex(combinations.length)];
+
+function util_generateRowOfImageWidths(secretNum, combinations) {
+    let randomIndex = Math.floor(Math.random() * secretNum) % combinations.length;
+    return combinations[randomIndex];
 }
 
 
@@ -279,7 +292,7 @@ function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
     let photoCounter = numOfPhotos;
     let rowOfWidthsArr = new Array();
      while (photoCounter > 0) {
-        let oneRowOfWidths = randomTwelveColumnWidthsForRow();
+        let oneRowOfWidths = randomTwelveColumnWidthsForRow(5132019);
         if (oneRowOfWidths.length > photoCounter) {
             oneRowOfWidths = oneRowOfWidths.slice(0, photoCounter);
             rowOfWidthsArr.push(oneRowOfWidths);
@@ -291,6 +304,36 @@ function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
     console.log(`There are ${rowOfWidthsArr.length} rows`);
     return rowOfWidthsArr;
 }
+
+
+function setNumOfRowsPerPage(numOfRowsPerPage) {
+    
+    return function(rowOfWidthsArr) {
+
+        let links = [];
+        let imageNum = 0;
+
+        let tmpObj = {from: null, to: null};
+        tmpObj.from = 0;
+
+        for (let i = 0; i < rowOfWidthsArr.length; i++) {
+            if ((i % numOfRowsPerPage == 0) && (i != 0)) {
+                tmpObj.to = imageNum-1;
+                links.push(tmpObj);
+                tmpObj = {from: null, to: null};
+                tmpObj.from = imageNum;
+            }
+            imageNum = imageNum + rowOfWidthsArr[i].length;
+        }
+
+        if (!tmpObj.to) {
+            tmpObj.to = imageNum - 1;
+            links.push(tmpObj);
+        } 
+        return links;
+    }
+}
+
 
 function createImageIndexLinks(rowOfWidthsArr) {
     let links = [];
@@ -318,21 +361,22 @@ function createImageIndexLinks(rowOfWidthsArr) {
 const mapStateToProps = function(state) {
     const { photoReducer} = state;
     let flattened = null;
-
+    let links = null;
     if (photoReducer && photoReducer.photoData) {
         let numOfPhotos = photoReducer.photoData.firstToLast().length;
         let rowOfWidthsArr = createRowOfWidthsArrFromNumOfPhotos(numOfPhotos);
-        let links = createImageIndexLinks(rowOfWidthsArr);
+        links = setNumOfRowsPerPage(4)(rowOfWidthsArr);
         console.log(links);
         flattened = [].concat.apply([], rowOfWidthsArr);
     }
     return {
         // it is an AVL tree
         treeWithPhotos: photoReducer.photoData,
-        randWithArr: flattened
+        randWithArr: flattened,
+        pageLinks: links
     }
 }
-  
-  export default connect(mapStateToProps, {
-    getPhotosAction: getPhotos,
-  })(Gallery); 
+
+export default connect(mapStateToProps, {
+getPhotosAction: getPhotos,
+})(Gallery); 
