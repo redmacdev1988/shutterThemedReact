@@ -123,12 +123,14 @@ class Gallery extends Component {
         this.setState({ photos: results });
     }
 
-    pagerClicked() {
-        console.log('pager clicked');
+    pagerClicked(linkObj) {
+        //console.log(`page link ${from} - ${to} clicked`);
+        console.log(`displaying photos from ${linkObj.from} to ${linkObj.to}`);
+        
         const { treeWithPhotos } = this.props;
         let arr = treeWithPhotos.firstToLast();
         let arrObj = [];
-        for (let i = 38; i < arr.length; i++) {
+        for (let i = linkObj.from; i <= linkObj.to; i++) {
             arrObj.push({
                 found: [],
                 pattern: '',
@@ -139,6 +141,7 @@ class Gallery extends Component {
 
         const element = document.getElementById('buttonPanel');
         element.scrollIntoView({behavior: 'auto'});
+        
     }
 
     static getDerivedStateFromProps(nextProps, prevState) {
@@ -196,8 +199,9 @@ class Gallery extends Component {
     }
 
     render() {
-        const { photos, pages } = this.state;
-        const { randWithArr } = this.props;
+        const { photos } = this.state;
+        const { randWithArr, pageLinks } = this.props;
+        
         return (
             <div id="galleryWrapper">
                 <div id="gallery" className="row align-items-stretch">  
@@ -230,7 +234,7 @@ class Gallery extends Component {
                             <a href={photoObj.url}  className="d-block photo-item" data-fancybox="gallery">
                             <img src={photoObj.url} alt="Image" className="img-fluid" />
                             <div className="photo-text-more">
-                                <h3 className="heading"><span>{index} | </span>{this.getURLTitle(photoObj.url)}</h3>
+                                <h3 className="heading">{this.getURLTitle(photoObj.url)}</h3>
                                 <span class="icon icon-search"></span>
                             </div>
                             </a>
@@ -238,11 +242,15 @@ class Gallery extends Component {
                     })}
                 </div>
                 <div id="pager">
-                {pages.map((info, index) => {
+                {pageLinks ? pageLinks.map((linkObj, index) => {
                     return (
-                        <button onClick={this.pagerClicked} type="button" className="btn btn-secondary">{info.from} - {info.to}</button>
+                        <button onClick={(event) => {this.pagerClicked(linkObj)}}
+                                type="button" 
+                                className="btn btn-secondary">
+                                {linkObj.from} - {linkObj.to}
+                        </button>
                     );
-                })}
+                }) : null}
                 </div>
             </div>
         );
@@ -291,7 +299,7 @@ function util_generateRowOfImageWidths(secretNum, combinations) {
 function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
     let photoCounter = numOfPhotos;
     let rowOfWidthsArr = new Array();
-     while (photoCounter > 0) {
+    while (photoCounter > 0) {
         let oneRowOfWidths = randomTwelveColumnWidthsForRow(5132019);
         if (oneRowOfWidths.length > photoCounter) {
             oneRowOfWidths = oneRowOfWidths.slice(0, photoCounter);
@@ -332,30 +340,6 @@ function setNumOfRowsPerPage(numOfRowsPerPage) {
         } 
         return links;
     }
-}
-
-
-function createImageIndexLinks(rowOfWidthsArr) {
-    let links = [];
-    let imageNum = 0;
-    
-    let tmpObj = {from: null, to: null};
-    tmpObj.from = 0;
-    for (let i = 0; i < rowOfWidthsArr.length; i++) {
-        if ((i % 4 == 0) && (i != 0)) {
-            tmpObj.to = imageNum-1;
-            links.push(tmpObj);
-            tmpObj = {from: null, to: null};
-            tmpObj.from = imageNum;
-        }
-        imageNum = imageNum + rowOfWidthsArr[i].length;
-    }
-
-    if (!tmpObj.to) {
-        tmpObj.to = imageNum - 1;
-        links.push(tmpObj);
-    } 
-    return links;
 }
 
 const mapStateToProps = function(state) {
