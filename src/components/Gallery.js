@@ -31,16 +31,6 @@ class Gallery extends Component {
             startsWithValue: '',
             selectedOption: null,
             randWidthArr: null,
-            pages: [{
-                from: 0,
-                to: 18
-            }, {
-                from: 19,
-                to: 40
-            }, {
-                from:41,
-                to: 61
-            }],
         } 
         this.titleContainsHandleChange = this.titleContainsHandleChange.bind(this);
         this.startsWithHandleChange = this.startsWithHandleChange.bind(this);
@@ -48,8 +38,7 @@ class Gallery extends Component {
         this.zToAClicked = this.zToAClicked.bind(this);
         this.getURLTitle = this.getURLTitle.bind(this);
         this.pagerClicked = this.pagerClicked.bind(this);
-
-        this.childDiv = React.createRef();
+        this.scrollToTop = this.scrollToTop.bind(this);
     }
 
     componentDidMount() {
@@ -123,6 +112,21 @@ class Gallery extends Component {
         this.setState({ photos: results });
     }
 
+    promisifySetState(newState) {
+        console.log('hold on, let me set state first...');
+        return new Promise((resolve) => this.setState(newState, () => resolve()));
+    }
+
+    scrollToTop(scrollDuration) {
+        var scrollStep = -window.scrollY / (scrollDuration / 15),
+            scrollInterval = setInterval(function(){
+            if ( window.scrollY != 0 ) {
+                window.scrollBy( 0, scrollStep );
+            }
+            else clearInterval(scrollInterval); 
+        },15);
+    }
+
     pagerClicked(linkObj) {
         //console.log(`page link ${from} - ${to} clicked`);
         console.log(`displaying photos from ${linkObj.from} to ${linkObj.to}`);
@@ -137,11 +141,19 @@ class Gallery extends Component {
                 url: arr[i]
             });
         }
-        this.setState({ photos: arrObj });
 
-        const element = document.getElementById('buttonPanel');
-        element.scrollIntoView({behavior: 'auto'});
-        
+        this.promisifySetState({ photos: arrObj }).then(() => {
+            console.log('setState done using scrollBy');
+            //this.scrollToTop(200);
+            setTimeout(()=>{
+                window.scroll({
+                    top: 0,
+                    left: 0,
+                    behavior: 'smooth'
+                  });
+            },800);
+           
+        });
     }
 
     static getDerivedStateFromProps(nextProps, prevState) {
@@ -154,8 +166,8 @@ class Gallery extends Component {
             return { photos: [] }
         }
         if (!prevState.photos) {
-            console.log('no prev photo arr');
             if (nextProps.treeWithPhotos) {
+                console.log('MARK')
                 let arr = nextProps.treeWithPhotos.firstToLast();
                 let arrObj = [];
                 for (let i = 0; i < arr.length; i++) {
@@ -173,9 +185,12 @@ class Gallery extends Component {
         else if ((prevState.value === '' && prevState.photos && prevState.photos.length === 0)
         || (prevState.startsWithValue === '' && prevState.photos && prevState.photos.length === 0))  {
             if (nextProps.treeWithPhotos) {
+                console.log("MARK 2");
+                console.log(nextProps);
+                let linkArr = nextProps.pageLinks;
                 let arr = nextProps.treeWithPhotos.firstToLast();
                 let arrObj = [];
-                for (let i = 0; i < arr.length; i++) {
+                for (let i = linkArr[0].from; i <= linkArr[0].to; i++) {
                     arrObj.push({
                         found: [],
                         pattern: '',
@@ -198,10 +213,20 @@ class Gallery extends Component {
         }
     }
 
+    // So whenever the component has a state change it will autosave the data. 
+    // There are other ways to implement it too. The componentDidUpdate is particularly
+    // useful when an operation needs to happen after the DOM is updated and the update 
+    // queue is emptied. 
+    componentDidUpdate(prevProps, prevState) {
+        console.log(` componentDidUpdate `);
+        console.log(prevProps);
+    }
+
     render() {
         const { photos } = this.state;
         const { randWithArr, pageLinks } = this.props;
         
+        console.log('-- render --');
         return (
             <div id="galleryWrapper">
                 <div id="gallery" className="row align-items-stretch">  
@@ -346,13 +371,17 @@ const mapStateToProps = function(state) {
     const { photoReducer} = state;
     let flattened = null;
     let links = null;
+    
     if (photoReducer && photoReducer.photoData) {
+        console.log('calculating photos and links');
         let numOfPhotos = photoReducer.photoData.firstToLast().length;
         let rowOfWidthsArr = createRowOfWidthsArrFromNumOfPhotos(numOfPhotos);
         links = setNumOfRowsPerPage(4)(rowOfWidthsArr);
         console.log(links);
         flattened = [].concat.apply([], rowOfWidthsArr);
+        console.log('photos and links ready');
     }
+
     return {
         // it is an AVL tree
         treeWithPhotos: photoReducer.photoData,
