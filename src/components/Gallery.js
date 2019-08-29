@@ -34,11 +34,9 @@ class Gallery extends Component {
         } 
         this.titleContainsHandleChange = this.titleContainsHandleChange.bind(this);
         this.startsWithHandleChange = this.startsWithHandleChange.bind(this);
-        this.aToZClicked = this.aToZClicked.bind(this);
-        this.zToAClicked = this.zToAClicked.bind(this);
         this.getURLTitle = this.getURLTitle.bind(this);
         this.pagerClicked = this.pagerClicked.bind(this);
-        this.scrollToTop = this.scrollToTop.bind(this);
+        this.setPhotoList = this.setPhotoList.bind(this);
     }
 
     componentDidMount() {
@@ -51,34 +49,18 @@ class Gallery extends Component {
         console.log('-- componentWillUnmount --');
     }
 
-    aToZClicked() {
-        const { treeWithPhotos } = this.props;
-        let arr = treeWithPhotos.firstToLast();
+    setPhotoList(from = 0, to = 0, originalArray=[]) {
         let arrObj = [];
-        for (let i = 0; i < arr.length; i++) {
+        for (let i = from; i <= to; i++) {
             arrObj.push({
                 found: [],
                 pattern: '',
-                url: arr[i]
+                url: originalArray[i]
             });
         }
         this.setState({ photos: arrObj });
-    };
+    }
 
-
-    zToAClicked() {
-        const { treeWithPhotos } = this.props;
-        let arr = treeWithPhotos.lastToFirst();
-        let arrObj = [];
-        for (let i = 0; i < arr.length; i++) {
-            arrObj.push({
-                found: [],
-                pattern: '',
-                url: arr[i]
-            });
-        }
-        this.setState({ photos: arrObj });
-    };
 
     startsWithHandleChange(event) {
         let searchPattern = event.target.value.trim();
@@ -117,16 +99,6 @@ class Gallery extends Component {
         return new Promise((resolve) => this.setState(newState, () => resolve()));
     }
 
-    scrollToTop(scrollDuration) {
-        var scrollStep = -window.scrollY / (scrollDuration / 15),
-            scrollInterval = setInterval(function(){
-            if ( window.scrollY != 0 ) {
-                window.scrollBy( 0, scrollStep );
-            }
-            else clearInterval(scrollInterval); 
-        },15);
-    }
-
     pagerClicked(linkObj) {
         //console.log(`page link ${from} - ${to} clicked`);
         console.log(`displaying photos from ${linkObj.from} to ${linkObj.to}`);
@@ -144,7 +116,6 @@ class Gallery extends Component {
 
         this.promisifySetState({ photos: arrObj }).then(() => {
             console.log('setState done using scrollBy');
-            //this.scrollToTop(200);
             setTimeout(()=>{
                 window.scroll({
                     top: 0,
@@ -231,10 +202,6 @@ class Gallery extends Component {
             <div id="galleryWrapper">
                 <div id="gallery" className="row align-items-stretch">  
                     <div id="buttonPanel" style={searchStyle} className="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
-                        <div className="btn-group mr-2" role="group" aria-label="First group">
-                            <button onClick={this.aToZClicked} type="button" className="btn btn-secondary">A to Z</button>
-                            <button onClick={this.zToAClicked} type="button" className="btn btn-secondary">Z to A</button>
-                        </div>
                         <div className="input-group">
                             <div className="input-group-prepend">
                             <div className="input-group-text" id="btnGroupAddon">Title contains: </div>
