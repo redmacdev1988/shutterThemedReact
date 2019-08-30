@@ -23,6 +23,8 @@ const searchStyle = {
 }
 
 const URL_PREPEND = `http://localhost:3000/daily-photos/`;
+const SEARCH_STARTS_WITH = "Search-StartsWith";
+const SEARCH_CONTAINS = "Search-Contains";
 
 class Gallery extends Component {
     constructor(props) {   
@@ -34,8 +36,7 @@ class Gallery extends Component {
             selectedOption: null,
             randWidthArr: null,
         } 
-        this.titleContainsHandleChange = this.titleContainsHandleChange.bind(this);
-        this.startsWithHandleChange = this.startsWithHandleChange.bind(this);
+
         this.getURLTitle = this.getURLTitle.bind(this);
         this.pagerClicked = this.pagerClicked.bind(this);
         this.setPhotoList = this.setPhotoList.bind(this);
@@ -43,52 +44,42 @@ class Gallery extends Component {
     }
 
     componentDidMount() {
-        console.log('-- componentDidMount --');
         const { getPhotosAction } = this.props;
         getPhotosAction();
     }
 
-    componentWillUnmount() {
-        console.log('-- componentWillUnmount --');
-    }
-
-    setPhotoList(from, to, originalArray=[], callback) {
+    setPhotoList(from, to, originalArray=[]) {
         let arrObj = [];
         for (let i = from; i <= to; i++) {
             arrObj.push({found: [], pattern: '', url: originalArray[i]
             });
         }
-        //return callback(arrObj);
         return arrObj;
     }
 
     emptyStr(str) {return (!str || str === '');}
 
-    startsWithHandleChange(event) {
-        let searchPattern = event.target.value.trim();
-        this.setState({startsWithValue: searchPattern});
+    searchWithHandleChange(type, event) {
+        let titleSubStr = event.target.value;
         const { treeWithPhotos, pageLinks } = this.props;
         let arr = treeWithPhotos.firstToLast();
 
-        let results = (this.emptyStr(searchPattern)) ?  
-        this.setPhotoList(pageLinks[0].from, pageLinks[0].to, arr) :
-        treeWithPhotos.searchForStartingWith(URL_PREPEND, searchPattern);
-        
-        this.setState({ photos: results });
-    }
-
-    titleContainsHandleChange(event) {
-        let titleSubStr = event.target.value;
-        this.setState({value:titleSubStr});
-        const { treeWithPhotos, pageLinks } = this.props;
-
-        if (this.emptyStr(titleSubStr)) {
-            let arr = treeWithPhotos.firstToLast();
-            this.setState({photos: this.setPhotoList(pageLinks[0].from, pageLinks[0].to, arr)});
-        } else {
-            let results = treeWithPhotos.searchForAnyMatch(URL_PREPEND, titleSubStr);
-            this.setState({ photos: results });
+        let searchResults;
+        switch (type) {
+            case SEARCH_STARTS_WITH:
+                this.setState({startsWithValue: titleSubStr});
+                searchResults = treeWithPhotos.searchForStartingWith(URL_PREPEND, titleSubStr);
+                break;
+            case SEARCH_CONTAINS:
+                this.setState({value: titleSubStr});
+                searchResults = treeWithPhotos.searchForAnyMatch(URL_PREPEND, titleSubStr);
+                break;
+            default:
+                break;
         }
+        let results = this.emptyStr(titleSubStr) ?
+        this.setPhotoList(pageLinks[0].from, pageLinks[0].to, arr) : searchResults;
+        this.setState({photos: results});
     }
 
     promisifySetState(newState) {
@@ -123,11 +114,7 @@ class Gallery extends Component {
                 let arr = nextProps.treeWithPhotos.firstToLast();
                 let arrObj = [];
                 for (let i = linkArr[0].from; i <= linkArr[0].to; i++) {
-                    arrObj.push({
-                        found: [],
-                        pattern: '',
-                        url: arr[i]
-                    });
+                    arrObj.push({ found: [], pattern: '', url: arr[i] });
                 }
                 return { photos: arrObj }
             } else { return { photos: [] } }
@@ -144,12 +131,8 @@ class Gallery extends Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        console.log(` componentDidUpdate `);
-        console.log(prevProps);
         if (prevProps && prevProps.treeWithPhotos && prevProps.pageLinks) {
-            console.log('---- hahah -----');
             let linkArr = prevProps.pageLinks;
-            console.log(linkArr[0]);
             let arr = prevProps.treeWithPhotos.firstToLast();
             return { photos : this.setPhotoList(linkArr[0].from, linkArr[0].to, arr) };
         }
@@ -158,8 +141,6 @@ class Gallery extends Component {
     render() {
         const { photos } = this.state;
         const { randWithArr, pageLinks } = this.props;
-        
-        console.log('-- render --');
         return (
             <div id="galleryWrapper">
                 <div id="gallery" className="row align-items-stretch">  
@@ -168,7 +149,7 @@ class Gallery extends Component {
                             <div className="input-group-prepend">
                             <div className="input-group-text" id="btnGroupAddon">Title contains: </div>
                             </div>
-                            <input value={this.state.value} onChange={this.titleContainsHandleChange} 
+                            <input value={this.state.value} onChange={this.searchWithHandleChange.bind(this, SEARCH_CONTAINS)} 
                                     type="text" className="form-control" placeholder="title name" 
                                     aria-label="title name" aria-describedby="btnGroupAddon" />   
                         </div>
@@ -176,7 +157,7 @@ class Gallery extends Component {
                             <div className="input-group-prepend">
                             <div className="input-group-text" id="btnGroupStartsWith">Starts With: </div>
                             </div>
-                            <input value={this.state.startsWithValue} onChange={this.startsWithHandleChange} 
+                            <input value={this.state.startsWithValue} onChange={this.searchWithHandleChange.bind(this, SEARCH_STARTS_WITH)} 
                                     type="text" className="form-control" placeholder="starts with" 
                                     aria-label="starts with" aria-describedby="btnGroupStartsWith" />   
                         </div>
