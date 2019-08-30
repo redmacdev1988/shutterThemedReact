@@ -22,11 +22,13 @@ const searchStyle = {
     marginRight: 'auto',
 }
 
+const URL_PREPEND = `http://localhost:3000/daily-photos/`;
+
 class Gallery extends Component {
     constructor(props) {   
         super(props);
         this.state = {  
-            photos: null, // keeps a list of all the photos
+            photos: [], // keeps a list of all the photos
             value: '',
             startsWithValue: '',
             selectedOption: null,
@@ -37,6 +39,7 @@ class Gallery extends Component {
         this.getURLTitle = this.getURLTitle.bind(this);
         this.pagerClicked = this.pagerClicked.bind(this);
         this.setPhotoList = this.setPhotoList.bind(this);
+        this.emptyStr = this.emptyStr.bind(this);
     }
 
     componentDidMount() {
@@ -49,81 +52,57 @@ class Gallery extends Component {
         console.log('-- componentWillUnmount --');
     }
 
-    setPhotoList(from = 0, to = 0, originalArray=[]) {
+    setPhotoList(from, to, originalArray=[], callback) {
         let arrObj = [];
         for (let i = from; i <= to; i++) {
-            arrObj.push({
-                found: [],
-                pattern: '',
-                url: originalArray[i]
+            arrObj.push({found: [], pattern: '', url: originalArray[i]
             });
         }
-        this.setState({ photos: arrObj });
+        //return callback(arrObj);
+        return arrObj;
     }
 
+    emptyStr(str) {return (!str || str === '');}
 
     startsWithHandleChange(event) {
         let searchPattern = event.target.value.trim();
-        if (!searchPattern || searchPattern === '') {
-            this.setState({ startsWithValue: searchPattern });
-            const { treeWithPhotos } = this.props;
-            let arr = treeWithPhotos.firstToLast();
-            let arrObj = [];
-            for (let i = 0; i < arr.length; i++) {
-                arrObj.push({
-                    found: [],
-                    pattern: '',
-                    url: arr[i]
-                });
-            }
-            this.setState({ photos: arrObj });
-        } else {
-            this.setState({ startsWithValue: searchPattern });
-            const { treeWithPhotos } = this.props;
-            let prepend = `http://localhost:3000/daily-photos/`;
-            let results = treeWithPhotos.searchForStartingWith(prepend, searchPattern);
-            this.setState({ photos: results });
-        }  
-    }
+        this.setState({startsWithValue: searchPattern});
+        const { treeWithPhotos, pageLinks } = this.props;
+        let arr = treeWithPhotos.firstToLast();
 
-    titleContainsHandleChange(event) {
-        this.setState({ value: event.target.value });
-        const { treeWithPhotos } = this.props;
-        let prepend = `http://localhost:3000/daily-photos/`;
-        let results = treeWithPhotos.searchForAnyMatch(prepend, event.target.value);
+        let results = (this.emptyStr(searchPattern)) ?  
+        this.setPhotoList(pageLinks[0].from, pageLinks[0].to, arr) :
+        treeWithPhotos.searchForStartingWith(URL_PREPEND, searchPattern);
+        
         this.setState({ photos: results });
     }
 
+    titleContainsHandleChange(event) {
+        let titleSubStr = event.target.value;
+        this.setState({value:titleSubStr});
+        const { treeWithPhotos, pageLinks } = this.props;
+
+        if (this.emptyStr(titleSubStr)) {
+            let arr = treeWithPhotos.firstToLast();
+            this.setState({photos: this.setPhotoList(pageLinks[0].from, pageLinks[0].to, arr)});
+        } else {
+            let results = treeWithPhotos.searchForAnyMatch(URL_PREPEND, titleSubStr);
+            this.setState({ photos: results });
+        }
+    }
+
     promisifySetState(newState) {
-        console.log('hold on, let me set state first...');
         return new Promise((resolve) => this.setState(newState, () => resolve()));
     }
 
     pagerClicked(linkObj) {
-        //console.log(`page link ${from} - ${to} clicked`);
-        console.log(`displaying photos from ${linkObj.from} to ${linkObj.to}`);
-        
         const { treeWithPhotos } = this.props;
         let arr = treeWithPhotos.firstToLast();
-        let arrObj = [];
-        for (let i = linkObj.from; i <= linkObj.to; i++) {
-            arrObj.push({
-                found: [],
-                pattern: '',
-                url: arr[i]
-            });
-        }
-
-        this.promisifySetState({ photos: arrObj }).then(() => {
-            console.log('setState done using scrollBy');
+        let photoArr = this.setPhotoList(linkObj.from, linkObj.to, arr);
+        this.promisifySetState({ photos: photoArr }).then(() => {
             setTimeout(()=>{
-                window.scroll({
-                    top: 0,
-                    left: 0,
-                    behavior: 'smooth'
-                  });
+                window.scroll({top: 0, left: 0, behavior: 'smooth'});
             },800);
-           
         });
     }
 
@@ -136,28 +115,10 @@ class Gallery extends Component {
             console.log(' photo array is empty AND value of TITLE CONTAINS exists');
             return { photos: [] }
         }
-        if (!prevState.photos) {
-            if (nextProps.treeWithPhotos) {
-                console.log('MARK')
-                let arr = nextProps.treeWithPhotos.firstToLast();
-                let arrObj = [];
-                for (let i = 0; i < arr.length; i++) {
-                    arrObj.push({
-                        found: [],
-                        pattern: '',
-                        url: arr[i]
-                    });
-                }
-                return { photos: arrObj } 
-            } else {
-                return { photos: [] }
-            }
-        }
-        else if ((prevState.value === '' && prevState.photos && prevState.photos.length === 0)
+        if ((prevState.value === '' && prevState.photos && prevState.photos.length === 0)
         || (prevState.startsWithValue === '' && prevState.photos && prevState.photos.length === 0))  {
             if (nextProps.treeWithPhotos) {
                 console.log("MARK 2");
-                console.log(nextProps);
                 let linkArr = nextProps.pageLinks;
                 let arr = nextProps.treeWithPhotos.firstToLast();
                 let arrObj = [];
@@ -169,9 +130,7 @@ class Gallery extends Component {
                     });
                 }
                 return { photos: arrObj }
-            } else { 
-                return { photos: [] } 
-            }
+            } else { return { photos: [] } }
         }
         return { photos: prevState.photos }
      }
@@ -184,13 +143,16 @@ class Gallery extends Component {
         }
     }
 
-    // So whenever the component has a state change it will autosave the data. 
-    // There are other ways to implement it too. The componentDidUpdate is particularly
-    // useful when an operation needs to happen after the DOM is updated and the update 
-    // queue is emptied. 
     componentDidUpdate(prevProps, prevState) {
         console.log(` componentDidUpdate `);
         console.log(prevProps);
+        if (prevProps && prevProps.treeWithPhotos && prevProps.pageLinks) {
+            console.log('---- hahah -----');
+            let linkArr = prevProps.pageLinks;
+            console.log(linkArr[0]);
+            let arr = prevProps.treeWithPhotos.firstToLast();
+            return { photos : this.setPhotoList(linkArr[0].from, linkArr[0].to, arr) };
+        }
     }
 
     render() {
