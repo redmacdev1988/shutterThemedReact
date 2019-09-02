@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import { Footer, Header, Gallery } from './components';
-
 class Main extends Component {
     constructor(props) {
       super(props);
@@ -16,7 +15,7 @@ class Main extends Component {
                   </div>
                   <div className="site-mobile-menu-body"></div>
                 </div>
-              
+
               <Header activeMenu='Main' />
                 <main className="main-content">
                   <div className="container-fluid photos">
@@ -28,5 +27,4 @@ class Main extends Component {
           )
       }
   }
-
   export default Main;

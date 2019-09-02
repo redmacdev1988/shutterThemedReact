@@ -2,18 +2,10 @@ import React, { Component } from 'react'
 import { connect } from 'react-redux';
 import { getPhotos } from '../services/Gallery/actions'
 
-const mainContainer = {
-    backgroundColor:'black',
-}
+import {
+    CSSTransition,
+  } from 'react-transition-group';
 
-const galleryContainer = {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    alignContent: 'flex-start',
-}
 
 const searchStyle = {
     textTransform: 'uppercase',
@@ -36,8 +28,8 @@ class Gallery extends Component {
             startsWithValue: '',
             selectedOption: null,
             randWidthArr: null,
+            searchMode: false,
         } 
-
         this.getURLTitle = this.getURLTitle.bind(this);
         this.pagerClicked = this.pagerClicked.bind(this);
         this.setPhotoList = this.setPhotoList.bind(this);
@@ -52,8 +44,7 @@ class Gallery extends Component {
     setPhotoList(from, to, originalArray=[]) {
         let arrObj = [];
         for (let i = from; i <= to; i++) {
-            arrObj.push({found: [], pattern: '', url: originalArray[i]
-            });
+            arrObj.push({found: [], pattern: '', url: originalArray[i]});
         }
         return arrObj;
     }
@@ -61,10 +52,10 @@ class Gallery extends Component {
     emptyStr(str) {return (!str || str === '');}
 
     searchWithHandleChange(type, event) {
+        this.setState({searchMode: true})
         let titleSubStr = event.target.value;
         const { treeWithPhotos, pageLinks } = this.props;
         let arr = treeWithPhotos.firstToLast();
-
         let searchResults;
         switch (type) {
             case SEARCH_STARTS_WITH:
@@ -83,19 +74,13 @@ class Gallery extends Component {
         this.setState({photos: results});
     }
 
-    promisifySetState(newState) {
-        return new Promise((resolve) => this.setState(newState, () => resolve()));
-    }
-
     pagerClicked(linkObj) {
+        this.setState({searchMode: false});
+        window.scroll({top: 0, left: 0});
         const { treeWithPhotos } = this.props;
         let arr = treeWithPhotos.firstToLast();
         let photoArr = this.setPhotoList(linkObj.from, linkObj.to, arr);
-        this.promisifySetState({ photos: photoArr }).then(() => {
-            setTimeout(()=>{
-                window.scroll({top: 0, left: 0, behavior: 'smooth'});
-            },800);
-        });
+        this.setState({photos: photoArr});
     }
 
     static getDerivedStateFromProps(nextProps, prevState) {
@@ -139,7 +124,7 @@ class Gallery extends Component {
     }
 
     render() {
-        const { photos } = this.state;
+        const { photos, searchMode} = this.state;
         const { widthArr, pageLinks } = this.props;
         return (
             <div id="galleryWrapper">
@@ -162,18 +147,33 @@ class Gallery extends Component {
                                     aria-label="starts with" aria-describedby="btnGroupStartsWith" />   
                         </div>
                     </div>
-                    {photos.map((photoObj, index) => {
+                    {photos.map(
+                        (photoObj, index) => {
                         let cssClasses = 'col-6 col-md-6 col-lg-' + widthArr[index];
-                        return (
-                            <div className={cssClasses} data-aos="fade-up">
-                            <a href={photoObj.url}  className="d-block photo-item" data-fancybox="gallery">
-                            <img src={photoObj.url} alt="Image" className="img-fluid" />
-                            <div className="photo-text-more">
-                                <h3 className="heading">{this.getURLTitle(photoObj.url)}</h3>
-                                <span class="icon icon-search"></span>
+                        return !searchMode ? 
+                        ( 
+                            <CSSTransition timeout={500} key={photoObj.url}>
+                                <div className={cssClasses} data-aos="fade-up">
+                                    <a href={photoObj.url}  className="d-block photo-item" data-fancybox="gallery">
+                                    <img src={photoObj.url} alt="Image" className="img-fluid" />
+                                    <div className="photo-text-more">
+                                        <h3 className="heading">{this.getURLTitle(photoObj.url)}</h3>
+                                        <span class="icon icon-search"></span>
+                                    </div>
+                                    </a>
+                                </div>
+                            </CSSTransition>
+                        ) : (
+                            <div className={cssClasses}>
+                                <a href={photoObj.url}  className="d-block photo-item" data-fancybox="gallery">
+                                <img src={photoObj.url} alt="Image" className="img-fluid" />
+                                <div className="photo-text-more">
+                                    <h3 className="heading">{this.getURLTitle(photoObj.url)}</h3>
+                                    <span class="icon icon-search"></span>
+                                </div>
+                                </a>
                             </div>
-                            </a>
-                        </div>);
+                        );
                     })}
                 </div>
                 <div id="pager">
@@ -191,7 +191,6 @@ class Gallery extends Component {
         );
     }
 }
-
 
 // partial function
 // generates random widths if bootstrap total width is 12
@@ -253,7 +252,6 @@ function setLinkIndexForImages(rowOfWidthsArr, numOfPhotos) {
     for (let i = 0; i < rowOfWidthsArr.length; i++) {
         interval = interval + rowOfWidthsArr[i].length;
     }
-
     let fullPages = Math.floor(numOfPhotos/interval);
     let leftover = numOfPhotos % interval;
     let cur = 0;
@@ -266,12 +264,10 @@ function setLinkIndexForImages(rowOfWidthsArr, numOfPhotos) {
         links.push(tmpIndexObj);
         cur = cur + interval;
     }
-
     if (leftover !== 0) {        
         tmpIndexObj = {from: cur,to: cur + leftover-1}
         links.push(tmpIndexObj);
     }
-
     return links;
 }
 
