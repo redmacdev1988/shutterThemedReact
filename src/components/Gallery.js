@@ -25,6 +25,7 @@ const searchStyle = {
 const URL_PREPEND = `http://localhost:3000/daily-photos/`;
 const SEARCH_STARTS_WITH = "Search-StartsWith";
 const SEARCH_CONTAINS = "Search-Contains";
+const NUM_OF_ROWS_PER_PAGE = 3;
 
 class Gallery extends Component {
     constructor(props) {   
@@ -140,7 +141,7 @@ class Gallery extends Component {
 
     render() {
         const { photos } = this.state;
-        const { randWithArr, pageLinks } = this.props;
+        const { widthArr, pageLinks } = this.props;
         return (
             <div id="galleryWrapper">
                 <div id="gallery" className="row align-items-stretch">  
@@ -163,7 +164,7 @@ class Gallery extends Component {
                         </div>
                     </div>
                     {photos.map((photoObj, index) => {
-                        let cssClasses = 'col-6 col-md-6 col-lg-' + randWithArr[index];
+                        let cssClasses = 'col-6 col-md-6 col-lg-' + widthArr[index];
                         return (
                             <div className={cssClasses} data-aos="fade-up">
                             <a href={photoObj.url}  className="d-block photo-item" data-fancybox="gallery">
@@ -231,7 +232,7 @@ function util_generateRowOfImageWidths(secretNum, combinations) {
 }
 
 
-function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
+function createOnePageOfWidthsFromNumOfPhotos(numOfPhotos) {
     let photoCounter = numOfPhotos;
     let rowOfWidthsArr = new Array();
     while (photoCounter > 0) {
@@ -242,6 +243,7 @@ function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
             break;
         }
         rowOfWidthsArr.push(oneRowOfWidths);
+        if (rowOfWidthsArr.length === NUM_OF_ROWS_PER_PAGE) {break;}
         photoCounter = photoCounter - oneRowOfWidths.length;
     }
     console.log(`There are ${rowOfWidthsArr.length} rows`);
@@ -249,32 +251,43 @@ function createRowOfWidthsArrFromNumOfPhotos(numOfPhotos) {
 }
 
 
-function setNumOfRowsPerPage(numOfRowsPerPage) {
+function setLinkIndexForImages(rowOfWidthsArr, numOfPhotos) {
+    let links = [];
     
-    return function(rowOfWidthsArr) {
 
-        let links = [];
-        let imageNum = 0;
-
-        let tmpObj = {from: null, to: null};
-        tmpObj.from = 0;
-
-        for (let i = 0; i < rowOfWidthsArr.length; i++) {
-            if ((i % numOfRowsPerPage == 0) && (i != 0)) {
-                tmpObj.to = imageNum-1;
-                links.push(tmpObj);
-                tmpObj = {from: null, to: null};
-                tmpObj.from = imageNum;
-            }
-            imageNum = imageNum + rowOfWidthsArr[i].length;
-        }
-
-        if (!tmpObj.to) {
-            tmpObj.to = imageNum - 1;
-            links.push(tmpObj);
-        } 
-        return links;
+    let interval = 0;
+    for (let i = 0; i < rowOfWidthsArr.length; i++) {
+        interval = interval + rowOfWidthsArr[i].length;
     }
+
+
+    console.log(` √  interval to jump is ${interval}`);
+
+    let fullPages = Math.floor(numOfPhotos/interval);
+    console.log(` there are ${fullPages} full pages`);
+
+    let leftover = numOfPhotos % interval;
+    console.log(`there are ${leftover} leftover images`);
+
+    let cur = 0;
+    let tmpIndexObj;
+    for (let i = 0; i < fullPages; i++) {
+        tmpIndexObj = {
+            from: cur,
+            to: cur + interval - 1
+        }
+        links.push(tmpIndexObj);
+        cur = cur + interval;
+    }
+
+    if (leftover !== 0) {        
+        tmpIndexObj = {from: cur,to: cur + leftover-1}
+        links.push(tmpIndexObj);
+    }
+
+    console.log(links);
+    return links;
+    
 }
 
 const mapStateToProps = function(state) {
@@ -285,17 +298,20 @@ const mapStateToProps = function(state) {
     if (photoReducer && photoReducer.photoData) {
         console.log('calculating photos and links');
         let numOfPhotos = photoReducer.photoData.firstToLast().length;
-        let rowOfWidthsArr = createRowOfWidthsArrFromNumOfPhotos(numOfPhotos);
-        links = setNumOfRowsPerPage(4)(rowOfWidthsArr);
-        console.log(links);
-        flattened = [].concat.apply([], rowOfWidthsArr);
+        let pageOfWidthsArr = createOnePageOfWidthsFromNumOfPhotos(numOfPhotos);
+        console.log(pageOfWidthsArr);
+
+        links = setLinkIndexForImages(pageOfWidthsArr, numOfPhotos);
+        flattened = [].concat.apply([], pageOfWidthsArr);
+
+        console.log(flattened);
         console.log('photos and links ready');
     }
 
     return {
         // it is an AVL tree
         treeWithPhotos: photoReducer.photoData,
-        randWithArr: flattened,
+        widthArr: flattened,
         pageLinks: links
     }
 }
