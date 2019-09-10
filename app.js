@@ -6,6 +6,7 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var bioRouter = require('./routes/bio');
+var contactRouter = require('./routes/contact');
 
 var bodyParser = require('body-parser');
 var fs = require('fs');
@@ -31,9 +32,6 @@ files.map(function(value, index) {
 let arrStr = JSON.stringify(arrOfObjects);
 let photoObj = `{"name": "My Daily Photos", "array": ${arrStr}}`;
 let jsonResult = JSON.parse(photoObj);
-//console.log('---- json results ------');
-//console.log(jsonResult);
-
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -46,8 +44,20 @@ app.use(function(req, res, next) {
 
 
 app.get('/', (req, res) => {
-  console.log('starting up the app');
   return res.send(JSON.stringify(jsonResult));
+});
+
+app.get('/messages', (req, res)=> {
+  console.log(' you have reached GET [messges] ');
+  res.render('messages');
+});
+
+
+app.post('/messages', (req, res)=> {
+  console.log('you have reached POST [messges] ');
+
+  res.locals.data = req.body;
+  res.render('messages');
 });
 
 // view engine setup
@@ -62,6 +72,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/gallery', indexRouter);
 app.use('/bio', bioRouter);
+app.use('/contact', contactRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 router.get('/', function(req, res, next) {
-  res.render('bio', { title: 'Express' });
+  res.render('contact', { title: 'Express' });
 });
 
 module.exports = router;

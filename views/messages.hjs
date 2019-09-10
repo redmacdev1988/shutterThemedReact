@@ -1,0 +1,7 @@
+<h1>Your Message</h1>
+
+<p>
+    {{data.name}}
+    {{data.email}}
+    {{data.message}}
+</p>
